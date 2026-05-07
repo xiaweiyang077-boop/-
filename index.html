@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>地缘经济情报与A股预测仪表盘 · 每日自动更新</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0b0f1a;
+      font-family: 'Segoe UI', 'Roboto', 'Noto Sans SC', system-ui, sans-serif;
+      color: #e0e4ed;
+      line-height: 1.5;
+      padding: 20px;
+    }
+
+    .dashboard {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(135deg, #111827 0%, #1a1f36 100%);
+      padding: 20px 28px;
+      border-radius: 28px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(74, 144, 226, 0.2);
+    }
+
+    .title-section h1 {
+      font-size: 1.9rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      background: linear-gradient(to right, #b6cdfb, #6d9ce7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: #93a0bd;
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .live-badge {
+      background: #2e7d32;
+      color: white;
+      font-size: 0.75rem;
+      padding: 4px 12px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      animation: pulse 2s infinite;
+    }
+
+    .live-badge::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      background: #7ef07e;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7); }
+      70% { opacity: 0.9; box-shadow: 0 0 0 8px rgba(46, 125, 50, 0); }
+      100% { opacity: 1; box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); }
+    }
+
+    .update-controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .btn {
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.15);
+      padding: 10px 20px;
+      border-radius: 30px;
+      color: #ccd6f0;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.25s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+    }
+
+    .btn:hover {
+      background: rgba(74, 144, 226, 0.25);
+      border-color: #4a90e2;
+      color: white;
+    }
+
+    .last-updated {
+      font-size: 0.8rem;
+      color: #8895b9;
+    }
+
+    .grid-2col {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: #131a2b;
+      border-radius: 24px;
+      padding: 20px 22px;
+      border: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(4px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .card:hover {
+      border-color: rgba(74, 144, 226, 0.4);
+      transform: translateY(-3px);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 12px;
+    }
+
+    .badge {
+      background: #1e2c4a;
+      padding: 4px 12px;
+      border-radius: 16px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .alert-red {
+      background: rgba(220, 38, 38, 0.2);
+      color: #fca5a5;
+      border-left: 4px solid #ef4444;
+      padding: 8px 14px;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+
+    .highlight {
+      color: #f0b90b;
+      font-weight: 600;
+    }
+
+    .positive {
+      color: #4ade80;
+    }
+
+    .negative {
+      color: #f87171;
+    }
+
+    .news-item {
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .news-item:last-child {
+      border-bottom: none;
+    }
+
+    .tag {
+      background: #2d3a5e;
+      font-size: 0.7rem;
+      padding: 2px 10px;
+      border-radius: 12px;
+      margin-right: 6px;
+    }
+
+    .market-sentiment {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .sentiment-gauge {
+      background: #1c2538;
+      padding: 12px 18px;
+      border-radius: 20px;
+      text-align: center;
+      min-width: 100px;
+    }
+
+    .sentiment-value {
+      font-size: 2rem;
+      font-weight: 700;
+    }
+
+    .divider {
+      height: 1px;
+      background: rgba(255,255,255,0.1);
+      margin: 15px 0;
+    }
+
+    .forecast-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    .forecast-table th {
+      text-align: left;
+      padding: 8px 4px;
+      color: #9aa4c0;
+      font-weight: 500;
+    }
+
+    .forecast-table td {
+      padding: 8px 4px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .risk-list {
+      list-style: none;
+      margin-top: 8px;
+    }
+
+    .risk-list li {
+      padding: 6px 0;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .risk-list li::before {
+      content: "⚠️";
+      font-size: 0.9rem;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #556183;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 600px) {
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <!-- 头部 -->
+    <div class="header">
+      <div class="title-section">
+        <h1>🌐 地缘经济 · A股前瞻仪表盘</h1>
+        <div class="subtitle">
+          <span class="live-badge">实时更新</span>
+          <span id="currentDateDisplay"></span>
+          <span style="margin-left: 8px;">数据覆盖2026.01.01至今</span>
+        </div>
+      </div>
+      <div class="update-controls">
+        <span class="last-updated" id="lastUpdateTime">上次更新：--</span>
+        <button class="btn" id="refreshBtn">
+          <span>🔄</span> 刷新数据
+        </button>
+      </div>
+    </div>
+
+    <!-- 内容卡片区 -->
+    <div class="grid-2col" id="cardContainer">
+      <!-- 由 JavaScript 动态渲染 -->
+    </div>
+
+    <footer>
+      ⚡ 声明：本页面基于公开信息与自动生成模型分析，仅供宏观参考，不构成任何投资建议。市场有风险，投资需谨慎。
+    </footer>
+  </div>
+
+  <script>
+    (function() {
+      // ========== 真实数据获取（从 data.json） ==========
+      async function fetchLatestReport() {
+        const resp = await fetch('./data.json');
+        if (!resp.ok) throw new Error('数据加载失败');
+        const data = await resp.json();
+        // 确保数据结构完整
+        return {
+          date: data.date || '----',
+          generatedAt: data.generatedAt || new Date().toISOString(),
+          geopolitical: data.geopolitical || [],
+          fedPolicy: data.fedPolicy || [],
+          chinaEconomy: data.chinaEconomy || [],
+          marketReview: data.marketReview || {},
+          may8Outlook: data.may8Outlook || {},
+          nextWeekOutlook: data.nextWeekOutlook || {},
+          marketSentiment: data.marketSentiment || { current: '未知', score: 0, description: '' }
+        };
+      }
+
+      // ========== 渲染仪表盘 ==========
+      function renderDashboard(data) {
+        const container = document.getElementById('cardContainer');
+        if (!container) return;
+
+        const sentiment = data.marketSentiment || {};
+        const outlook = data.may8Outlook || {};
+        const nextWeek = data.nextWeekOutlook || {};
+
+        const geopoliticalItems = (data.geopolitical || []).map(item =>
+          `<div class="news-item"><span class="tag">${item.tag || '地缘'}</span> ${item.text || ''}</div>`
+        ).join('');
+
+        const fedItems = (data.fedPolicy || []).map(item =>
+          `<div class="news-item"><span class="tag">${item.tag || '央行'}</span> ${item.text || ''}</div>`
+        ).join('');
+
+        const chinaItems = (data.chinaEconomy || []).map(item =>
+          `<div class="news-item"><span class="tag">${item.tag || '中国'}</span> ${item.text || ''}</div>`
+        ).join('');
+
+        const sectorsTable = (outlook.sectors || []).map(s =>
+          `<tr><td><span class="positive">${s.name || ''}</span></td><td>${s.reason || ''}</td></tr>`
+        ).join('');
+
+        const risksList = (outlook.risks || []).map(r => `<li>${r}</li>`).join('');
+
+        const nextWeekRisks = (nextWeek.risks || []).map(r =>
+          `<div style="margin-top:6px;"><span class="negative">● ${r.scenario || ''}</span> — ${r.impact || ''}</div>`
+        ).join('');
+
+        const html = `
+          <!-- 地缘政治卡片 -->
+          <div class="card">
+            <div class="card-header">🌍 地缘政治热点 <span class="badge">实时追踪</span></div>
+            ${geopoliticalItems || '<div class="news-item">暂无地缘数据</div>'}
+          </div>
+
+          <!-- 全球央行 -->
+          <div class="card">
+            <div class="card-header">🏦 美联储与全球央行</div>
+            ${fedItems || '<div class="news-item">暂无央行数据</div>'}
+          </div>
+
+          <!-- 中国经济 -->
+          <div class="card">
+            <div class="card-header">🇨🇳 中国经济速览</div>
+            ${chinaItems || '<div class="news-item">暂无中国经济数据</div>'}
+          </div>
+
+          <!-- 市场情绪与复盘 -->
+          <div class="card">
+            <div class="card-header">📊 市场情绪与复盘</div>
+            <div class="market-sentiment">
+              <div class="sentiment-gauge">
+                <div style="color:#9aa4c0;">情绪指数</div>
+                <div class="sentiment-value" style="color: #4ade80;">${sentiment.score || '--'}</div>
+                <div style="font-size:0.8rem;">/100</div>
+              </div>
+              <div>
+                <div style="font-weight:600;">${sentiment.current || '--'}</div>
+                <div style="font-size:0.9rem; color:#b0bbd8;">${sentiment.description || ''}</div>
+              </div>
+            </div>
+            <div class="divider"></div>
+            <div><strong>📅 5月6日：</strong>${data.marketReview?.may6 || '暂无'}</div>
+            <div style="margin-top:8px;"><strong>📅 5月7日：</strong>${data.marketReview?.may7 || '暂无'}</div>
+          </div>
+
+          <!-- 5月8日预测 -->
+          <div class="card">
+            <div class="card-header">🔮 5月8日行情预测</div>
+            <div style="margin-bottom:12px;"><span class="highlight">${outlook.trend || '--'}</span></div>
+            <table class="forecast-table">
+              <thead><tr><th>板块</th><th>核心逻辑</th></tr></thead>
+              <tbody>${sectorsTable || '<tr><td colspan="2">暂无板块数据</td></tr>'}</tbody>
+            </table>
+            <div class="alert-red" style="margin-top:14px;">
+              <strong>⚠️ 风险提示</strong>
+              <ul class="risk-list">${risksList || '<li>暂无风险数据</li>'}</ul>
+            </div>
+          </div>
+
+          <!-- 下周展望 -->
+          <div class="card">
+            <div class="card-header">📆 下周展望 (5.11-5.15)</div>
+            <div style="margin-bottom:10px;"><span class="highlight">${nextWeek.trend || '--'}</span></div>
+            <p><span class="badge">核心事件</span> ${nextWeek.keyEvent || '--'}</p>
+            <div style="margin-top:12px;">
+              <strong>重点关注：</strong> ${(nextWeek.sectorsToWatch || []).join(' · ') || '暂无'}
+            </div>
+            <div class="alert-red" style="margin-top:14px;">
+              <strong>⚠️ 下周风险矩阵</strong>
+              ${nextWeekRisks || '<div>暂无风险数据</div>'}
+            </div>
+          </div>
+        `;
+
+        container.innerHTML = html;
+        document.getElementById('lastUpdateTime').innerText =
+          `上次更新：${new Date(data.generatedAt).toLocaleString('zh-CN')}`;
+      }
+
+      // ========== 日期显示 ==========
+      function updateDateDisplay() {
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}年${(now.getMonth()+1).toString().padStart(2,'0')}月${now.getDate().toString().padStart(2,'0')}日`;
+        document.getElementById('currentDateDisplay').innerText = dateStr;
+      }
+
+      // ========== 手动刷新 ==========
+      async function refreshData() {
+        const btn = document.getElementById('refreshBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span>⏳</span> 更新中...';
+        try {
+          const freshData = await fetchLatestReport();
+          renderDashboard(freshData);
+        } catch (error) {
+          console.error('刷新失败', error);
+          alert('数据刷新失败，请稍后再试。');
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = '<span>🔄</span> 刷新数据';
+        }
+      }
+
+      // ========== 自动跨天检测（每小时检查一次） ==========
+      function setupAutoUpdate() {
+        let currentDate = new Date().toDateString();
+        setInterval(async () => {
+          const newDate = new Date().toDateString();
+          if (newDate !== currentDate) {
+            console.log('检测到日期变化，自动拉取最新报告...');
+            currentDate = newDate;
+            updateDateDisplay();
+            try {
+              const freshData = await fetchLatestReport();
+              renderDashboard(freshData);
+            } catch (e) {
+              console.warn('自动更新失败', e);
+            }
+          }
+        }, 60 * 60 * 1000); // 每小时
+      }
+
+      // ========== 页面初始化 ==========
+      async function init() {
+        updateDateDisplay();
+        try {
+          const initialData = await fetchLatestReport();
+          renderDashboard(initialData);
+        } catch (e) {
+          console.warn('初始加载 data.json 失败，使用占位界面', e);
+          // 即使加载失败也显示一个占位提示
+          document.getElementById('cardContainer').innerHTML =
+            '<div class="card"><div class="card-header">⏳ 等待数据</div><p>暂时无法加载数据，请确保 data.json 文件已生成并处于同一目录。</p></div>';
+        }
+        document.getElementById('refreshBtn').addEventListener('click', refreshData);
+        setupAutoUpdate();
+      }
+
+      window.addEventListener('DOMContentLoaded', init);
+    })();
+  </script>
+</body>
+</html>
